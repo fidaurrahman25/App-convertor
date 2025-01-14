@@ -1,6 +1,5 @@
-name: CI Pipeline
+name: Android CI
 
-# Trigger workflow on push or pull request events
 on:
   push:
     branches:
@@ -9,29 +8,35 @@ on:
     branches:
       - main
 
-# Define jobs to run
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout the repository code
+    # Step 1: Checkout the repository
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Set up Python environment
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    # Step 2: Set up JDK
+    - name: Set up JDK
+      uses: actions/setup-java@v3
       with:
-        python-version: '3.9'
+        java-version: 11
+        distribution: temurin
 
-    # Step 3: Install dependencies
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+    # Step 3: Cache Gradle dependencies
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle
 
-    # Step 4: Run tests
-    - name: Run tests
-      run: |
-        pytest
+    # Step 4: Build the project
+    - name: Build with Gradle
+      run: ./gradlew build
+
+    # Step 5: Run unit tests
+    - name: Run unit tests
+      run: ./gradlew test
